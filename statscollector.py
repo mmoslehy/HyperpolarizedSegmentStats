@@ -1,0 +1,234 @@
+import vtkSegmentationCorePython as vtkSegmentationCore
+import vtkSlicerSegmentationsModuleLogicPython as vtkSlicerSegmentationsModuleLogic
+import slicer, logging, os, shutil
+from SegmentStatistics import SegmentStatisticsLogic
+import openpyxl
+
+#--DEBUGGING--
+#import ptvsd
+#ptvsd.enable_attach(secret='slicer')
+#ptvsd.wait_for_attach()
+# -----------
+
+"""This script assumes that the number of volumes (time points) for all metabolites are the same"""
+
+class NrrdConverterLogic(object):
+
+	# Constructor for the DicomToNrrdConverter
+	def __init__(self, pathToDicoms, pathToConverter):
+		self.pathToDicoms = os.path.normpath(pathToDicoms)
+		self.converter = os.path.normpath(pathToConverter)
+		if not os.path.exists(self.pathToDicoms) or not os.path.exists(self.converter):
+			print("DICOMs or DicomToNrrdConverter.exe does not exist")
+			quit()
+
+	# Loop through directory given to find directories with .dcm files, return a list of those directory paths
+	def getDicomDirs(self):
+		pathWalk = os.walk(self.pathToDicoms)
+		dicomDirs = []
+		for root, dirs, files in pathWalk:
+			for file in files:
+				if file.lower().endswith(".dcm") or file.lower().endswith(".ima"):
+					dicomDirs.append(root)
+		# Remove duplicates
+		noDuplicates = list(set(dicomDirs))
+		# Sort the list
+		noDuplicates.sort()
+		return noDuplicates
+
+	# Convert all DICOMs to Nrrd files with the names of their respective DICOM directories
+	def convertToNrrd(self):
+		dicomDirs = self.getDicomDirs()
+		condDictionary = {}
+		dcmDictionary = {}
+		for dicomDir in dicomDirs:
+			# Specify the output nrrd file name
+			nrrdFile = os.path.split(dicomDir)[1]
+			# Get an array of the parent directory, with position 0 being the parent and 1 being the child (see three lines below)
+			parentDir = os.path.split(os.path.split(dicomDir)[0])
+			# This is the directory above the directory containing the DICOMs (e.g. if PyBy6/8001/x.dcm then this is PyBy6)
+			metaboliteDir = parentDir[1]
+			# Get the directory name above the metabolite directory (e.g. 100percentOxygen)
+			conditionDir = os.path.split(parentDir[0])[1]
+			# Directory to hold Nrrd files
+			documentsDir = os.path.normpath(os.path.expanduser(r"~\\Documents\\StatsCollector\\NrrdOutput"))
+			if not os.path.exists(documentsDir):
+				os.makedirs(documentsDir)
+			# Parent folder name holding the Nrrd files, will be used to specify the CSV file names
+			parentFolder = conditionDir + "-" + metaboliteDir
+			# Nrrd file path
+			outputFilePath = os.path.normpath(documentsDir + "\\" + parentFolder + "_" + nrrdFile + ".nrrd")
+			runnerPath = os.path.split(self.converter)[0] + '\\runner.bat'
+			execString = runnerPath + " " + self.converter + " --inputDicomDirectory " + dicomDir + " --outputVolume " + outputFilePath
+			# Use DicomToNrrdConverter.exe to convert all DICOMs, inserting their output file paths into a dictionary to return after execution, supress stdout of converter
+			os.system(execString + " > nul")
+
+			key = conditionDir
+
+			# Append nrrd file names to dictionary
+			if not dcmDictionary.has_key(key):
+				dcmDictionary[key] = {}
+			
+			if not dcmDictionary[key].has_key(metaboliteDir):
+				dcmDictionary[key][metaboliteDir] = []
+
+			dcmDictionary[key][metaboliteDir].append(outputFilePath)
+			
+
+			# Inform the user that the DICOMs were successfully converted
+			logging.info("Successfully converted DICOMs in " + parentFolder)
+		return dcmDictionary
+
+class StatsCollectorLogic(object):
+	# Constructor to store the segmentation file name in the object's attributes
+	def __init__(self, segmentationFile, noiseSegment):
+		self.segFile = os.path.normpath(segmentationFile)
+		self.segNode = slicer.util.loadSegmentation(self.segFile,returnNode=True)[1]
+		self.xlWorkbooks = {}
+		self.noiseSegment = noiseSegment
+
+	# Function to check if a string is a float
+	@staticmethod
+	def digitize(s):
+		try:
+			return float(s)
+		except ValueError:
+			return s
+
+	# Export given segmentation logic to a CSV file. If the file exists, append to the end of its contents
+	# Deprecated
+	def exportStats(self, segStatLogic, csvFileName, header=""):
+		outputFile = csvFileName
+		if not csvFileName.lower().endswith('.csv'):
+			outputFile += '.csv'
+
+		fp = open(outputFile, "a")
+		fp.write(header+'\n')
+		fp.write(segStatLogic.exportToString())
+		fp.write("\n")
+		fp.close()
+
+	def computeSnrs(self, segStatLogic, segmentIDs, noiseStdev):
+		for segmentID in segmentIDs:
+			segStatLogic.statistics[segmentID, "SNR"] = segStatLogic.statistics[segmentID, "GS mean"] / noiseStdev
+		return segStatLogic
+
+	# Gets sheet
+	def getSheet(self, workbook, sheetName):
+		existingSheetNames = workbook.get_sheet_names()
+		existingSheetNames = [x.encode('UTF8') for x in existingSheetNames]
+
+		if sheetName in existingSheetNames:
+			return workbook.get_sheet_by_name(sheetName)
+		else:
+			return workbook.create_sheet(sheetName)
+
+	# Make worksheets for raw signal, SNR, and SNR ratio relative to a specific denominator (e.g. the metabolite pyruvate)
+	def advancedData(self, segStatLogicList, denominatorSegStatLogicList):
+		signalWs = self.getSheet("Raw Signal")
+		for i in range(len(segStatLogicList))
+			
+
+
+	def exportStatsToXl(self, segStatLogic, xlsxFileName, header="", sheetName=""):
+		getsnr = len(self.noiseSegment) != 0
+		outputFile = xlsxFileName
+		if not xlsxFileName.lower().endswith('.xlsx'):
+			outputFile += '.xlsx'
+
+		if not self.xlWorkbooks.has_key(outputFile):
+			self.xlWorkbooks[outputFile] = openpyxl.Workbook()
+
+		wb = self.xlWorkbooks[outputFile]
+		
+		if getsnr:
+			segStatLogic.keys += ('SNR',)
+			segmentIDs = segStatLogic.statistics['SegmentIDs']
+			noiseSegmentID = segmentIDs[[segStatLogic.statistics[segID,"Segment"] for segID in segmentIDs].index(self.noiseSegment)]
+			noiseStdev = segStatLogic.statistics[noiseSegmentID, "GS stdev"]
+			segStatLogic = self.computeSnrs(segStatLogic, segmentIDs, noiseStdev)
+
+		stats = segStatLogic.exportToString()
+		rows = stats.split('\n')
+
+		self.getSheet(wb, sheetName)
+
+		ws.append([header])
+		columnTitles = rows[0].split(',')
+		# if getsnr:
+		# 	columnTitles += ['"SNR"']
+		ws.append(columnTitles)
+
+		#meanIndex = columnTitles.index('"GS mean"')
+		#stdevIndex = columnTitles.index('"GS stdev"')
+		#noiseRowNumber = [row.split(',')[0] for row in rows[1:]].index(self.noiseSegment)
+		# noiseStdev = self.digitize([row.split(',') for row in rows[1:]][noiseRowNumber][stdevIndex])
+
+		for row in rows[1:]:
+			items = row.split(',')
+			items[:] = [self.digitize(x) for x in items]
+			# items += [items[meanIndex]/noiseStdev]
+			ws.append(items)
+
+	# Get statistics for a specific volume/timepoint
+	def getStatForVol(self, volFile, fileName, sheetName=""):
+		# Load master volumes
+		vol = slicer.util.loadVolume(volFile, returnNode=True)
+
+		if not vol[0]:
+			# Print error if volume does not exist or is inaccessible
+			print("Volume could not be loaded from: " + volFile)
+			quit()
+
+		volNode = vol[1]
+
+		# Compute statistics
+		segStatLogic = SegmentStatisticsLogic()
+		segStatLogic.computeStatistics(self.segNode, volNode)
+
+		# Specify the file name/path
+		documentsDir = os.path.normpath(os.path.expanduser(r"~\\Documents\\StatsCollector\\SegmentStatistics"))
+		filePath = os.path.normpath(documentsDir + "\\" + fileName)
+		fileParentDir = os.path.split(filePath)[0]
+
+		# Make the SegmentStatistics directory if it does not exist
+		if not os.path.exists(fileParentDir):
+			os.makedirs(fileParentDir)
+
+		# Export the stats to a file
+		#self.exportStats(segStatLogic, filePath, volNode.GetName())
+		self.exportStatsToXl(segStatLogic, filePath, volNode.GetName(), sheetName)
+
+class MetaExporter(object):
+	def __init__(self, pathToDicoms, pathToConverter, segmentationFile, folderSaveName, keepNrrdDir, noiseSegment):
+		self.converter = NrrdConverterLogic(pathToDicoms, pathToConverter)
+		self.sc = StatsCollectorLogic(segmentationFile, noiseSegment)
+		self.folderSaveName = folderSaveName
+
+		# Get all stats
+		dcmDictionary = self.converter.convertToNrrd()
+		#for metabolite, nrrdList in dcmDictionary.items():
+		#	for nrrd in nrrdList:
+		#		saveName = self.folderSaveName + "\\" + metabolite
+		#		self.sc.getStatForVol(nrrd, saveName)
+
+		
+		for condition, conditionDict in dcmDictionary.items():
+			for metabolite, timepoints in conditionDict.items():
+				for timepoint in timepoints:
+					saveName = self.folderSaveName + "\\" + condition
+					self.sc.getStatForVol(timepoint, saveName, metabolite)
+
+		# Export stats to XLSX files
+		for wbName, wb in self.sc.xlWorkbooks.items():
+			wb.remove_sheet(wb.worksheets[0])
+			wb.save(wbName)
+			#for sh in wb.worksheets:
+			#	#TEMP
+			#	sh = wb.create_sheet()
+			#	sh.values
+			
+
+		# Delete the NrrdOutput directory by default
+		if not keepNrrdDir:
+			shutil.rmtree(os.path.normpath(os.path.expanduser(r"~\\Documents\\StatsCollector\\NrrdOutput")))
