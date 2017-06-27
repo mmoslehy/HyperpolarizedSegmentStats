@@ -124,18 +124,31 @@ class StatsCollectorLogic(object):
 		segNames = [seg.GetNthSegment(segIndex).GetName() for segIndex in range(seg.GetNumberOfSegments())]
 		segNames.remove(self.noiseSegment)
 		for wbPath, wb in self.xlWorkbooks.items():
-			rawSignalWs = self.getWorkSheet(wb, "Raw signal")
+			rawSignalWs = self.getWorkSheet(wb, "Raw Signal")
+			snrSignalWs = self.getWorkSheet(wb, "SNR")
+			# ratioWs = self.getWorkSheet(wb, "Ratios")
 			condition = os.path.basename(wbPath).rstrip('.xlsx')
 			for seriesName, series in self.metaStats[condition].items():
 				rawSignalWs.append([seriesName])
 				rawSignalWs.append([''] + segNames)
+				snrSignalWs.append([seriesName])
+				snrSignalWs.append([''] + segNames)
+				# ratioWs.append([seriesName])
+				# ratioWs.append([''] + segNames)
 				for i in range(len(series)):
-					row = [i + 1]
+					rawRow = [i + 1]
+					snrRow = [i + 1]
+					ratioRow = [i + 1]
+
 					stats = series[i].statistics
 					for segmentID in stats["SegmentIDs"]:
 						if segmentID != self.noiseSegmentID:
-							row += [stats[segmentID, "GS mean"]]
-					rawSignalWs.append(row)
+							rawRow += [stats[segmentID, "GS mean"]]
+							snrRow += [stats[segmentID, "SNR"]]
+							# ratioRow += [stats[segmentID, "SNR"]/stats[]]
+					rawSignalWs.append(rawRow)
+					snrSignalWs.append(snrRow)
+					# ratioWs.append(row)
 
 	def getWorkBook(self, workbookName):
 		if not self.xlWorkbooks.has_key(workbookName):
