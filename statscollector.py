@@ -126,7 +126,7 @@ class StatsCollectorLogic(object):
 		for wbPath, wb in self.xlWorkbooks.items():
 			rawSignalWs = self.getWorkSheet(wb, "Raw Signal")
 			snrSignalWs = self.getWorkSheet(wb, "SNR")
-			# ratioWs = self.getWorkSheet(wb, "Ratios")
+			# ratioWs = self.getWorkSheet(wb, "Ratios") 
 			condition = os.path.basename(wbPath).rstrip('.xlsx')
 			for seriesName, series in self.metaStats[condition].items():
 				rawSignalWs.append([seriesName])
