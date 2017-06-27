@@ -119,22 +119,24 @@ class StatsCollectorLogic(object):
 			return workbook.create_sheet(sheetName)
 
 	# Make worksheets for raw signal, SNR, and SNR ratio relative to a specific denominator (e.g. the metabolite pyruvate)
-	def advancedData(self):
+	def advancedData(self, denominatorMetabolite):
 		seg = self.segNode.GetSegmentation()
 		segNames = [seg.GetNthSegment(segIndex).GetName() for segIndex in range(seg.GetNumberOfSegments())]
 		segNames.remove(self.noiseSegment)
 		for wbPath, wb in self.xlWorkbooks.items():
 			rawSignalWs = self.getWorkSheet(wb, "Raw Signal")
 			snrSignalWs = self.getWorkSheet(wb, "SNR")
-			# ratioWs = self.getWorkSheet(wb, "Ratios")
+			ratioWs = self.getWorkSheet(wb, "Ratios")
 			condition = os.path.basename(wbPath).rstrip('.xlsx')
+			denominatorMetaboliteSeries = self.metaStats[condition][denominatorMetabolite]
 			for seriesName, series in self.metaStats[condition].items():
 				rawSignalWs.append([seriesName])
 				rawSignalWs.append([''] + segNames)
 				snrSignalWs.append([seriesName])
 				snrSignalWs.append([''] + segNames)
-				# ratioWs.append([seriesName])
-				# ratioWs.append([''] + segNames)
+				if seriesName != denominatorMetabolite:
+					ratioWs.append([seriesName])
+					ratioWs.append([''] + segNames)
 				for i in range(len(series)):
 					rawRow = [i + 1]
 					snrRow = [i + 1]
@@ -145,10 +147,12 @@ class StatsCollectorLogic(object):
 						if segmentID != self.noiseSegmentID:
 							rawRow += [stats[segmentID, "GS mean"]]
 							snrRow += [stats[segmentID, "SNR"]]
-							# ratioRow += [stats[segmentID, "SNR"]/stats[]]
+							if seriesName != denominatorMetabolite:
+								ratioRow += [stats[segmentID, "SNR"]/denominatorMetaboliteSeries[i].statistics[segmentID, "SNR"]]
 					rawSignalWs.append(rawRow)
 					snrSignalWs.append(snrRow)
-					# ratioWs.append(row)
+					if seriesName != denominatorMetabolite:
+						ratioWs.append(ratioRow)
 
 	def getWorkBook(self, workbookName):
 		if not self.xlWorkbooks.has_key(workbookName):
@@ -215,7 +219,7 @@ class StatsCollectorLogic(object):
 		self.exportStatsToXl(segStatLogic, filePath, volNode.GetName(), seriesName)
 
 class MetaExporter(object):
-	def __init__(self, pathToDicoms, pathToConverter, segmentationFile, folderSaveName, keepNrrdDir, noiseSegment):
+	def __init__(self, pathToDicoms, pathToConverter, segmentationFile, folderSaveName, keepNrrdDir, noiseSegment, denominatorMetabolite="01_pyrBy6"):
 		self.converter = NrrdConverterLogic(pathToDicoms, pathToConverter)
 		self.sc = StatsCollectorLogic(segmentationFile, noiseSegment)
 		self.folderSaveName = folderSaveName
@@ -232,7 +236,7 @@ class MetaExporter(object):
 					self.sc.getStatForVol(volume, folderSaveName, condition, metabolite)
 
 		# Export stats to XLSX files
-		self.sc.advancedData()
+		self.sc.advancedData(denominatorMetabolite)
 		for wbName, wb in self.sc.xlWorkbooks.items():
 			wb.remove_sheet(wb.worksheets[0])
 			wb.save(wbName)
