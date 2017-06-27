@@ -86,6 +86,7 @@ class StatsCollectorLogic(object):
 		self.segNode = slicer.util.loadSegmentation(self.segFile,returnNode=True)[1]
 		self.xlWorkbooks = {}
 		self.noiseSegment = noiseSegment
+		self.metaStats = {}
 
 	# Function to check if a string is a float
 	@staticmethod
@@ -127,19 +128,23 @@ class StatsCollectorLogic(object):
 	def advancedData(self, segStatLogicList, denominatorSegStatLogicList):
 		signalWs = self.getSheet("Raw Signal")
 		for i in range(len(segStatLogicList))
-			
+			segStatLogic = segStatLogicList[i]
 
+
+	def getWorkBook(self, workbookName):
+		if not self.xlWorkbooks.has_key(workbookName):
+			self.xlWorkbooks[workbookName] = openpyxl.Workbook()
+		return self.xlWorkbooks[workbookName]
 
 	def exportStatsToXl(self, segStatLogic, xlsxFileName, header="", sheetName=""):
+		# See whether to get SNRs
 		getsnr = len(self.noiseSegment) != 0
 		outputFile = xlsxFileName
+
 		if not xlsxFileName.lower().endswith('.xlsx'):
 			outputFile += '.xlsx'
 
-		if not self.xlWorkbooks.has_key(outputFile):
-			self.xlWorkbooks[outputFile] = openpyxl.Workbook()
-
-		wb = self.xlWorkbooks[outputFile]
+		wb = getWorkBook(outputFile)
 		
 		if getsnr:
 			segStatLogic.keys += ('SNR',)
@@ -155,20 +160,15 @@ class StatsCollectorLogic(object):
 
 		ws.append([header])
 		columnTitles = rows[0].split(',')
-		# if getsnr:
-		# 	columnTitles += ['"SNR"']
 		ws.append(columnTitles)
-
-		#meanIndex = columnTitles.index('"GS mean"')
-		#stdevIndex = columnTitles.index('"GS stdev"')
-		#noiseRowNumber = [row.split(',')[0] for row in rows[1:]].index(self.noiseSegment)
-		# noiseStdev = self.digitize([row.split(',') for row in rows[1:]][noiseRowNumber][stdevIndex])
 
 		for row in rows[1:]:
 			items = row.split(',')
 			items[:] = [self.digitize(x) for x in items]
 			# items += [items[meanIndex]/noiseStdev]
 			ws.append(items)
+
+
 
 	# Get statistics for a specific volume/timepoint
 	def getStatForVol(self, volFile, fileName, sheetName=""):
