@@ -87,6 +87,13 @@ class StatsCollectorLogic(object):
 		self.xlWorkbooks = {}
 		self.noiseSegment = noiseSegment
 		self.metaStats = {}
+		# See whether to get SNRs
+		self.getsnr = len(self.noiseSegment) != 0
+		if self.getsnr:
+			seg = self.segNode.GetSegmentation()
+			for i in range(seg.GetNumberOfSegments()):
+				if seg.GetNthSegment(i).GetName() == self.noiseSegment:
+					self.noiseSegmentID = seg.GetNthSegmentID(i)
 
 	# Function to check if a string is a float
 	@staticmethod
@@ -96,26 +103,13 @@ class StatsCollectorLogic(object):
 		except ValueError:
 			return s
 
-	# Export given segmentation logic to a CSV file. If the file exists, append to the end of its contents
-	# Deprecated
-	def exportStats(self, segStatLogic, csvFileName, header=""):
-		outputFile = csvFileName
-		if not csvFileName.lower().endswith('.csv'):
-			outputFile += '.csv'
-
-		fp = open(outputFile, "a")
-		fp.write(header+'\n')
-		fp.write(segStatLogic.exportToString())
-		fp.write("\n")
-		fp.close()
-
 	def computeSnrs(self, segStatLogic, segmentIDs, noiseStdev):
 		for segmentID in segmentIDs:
 			segStatLogic.statistics[segmentID, "SNR"] = segStatLogic.statistics[segmentID, "GS mean"] / noiseStdev
 		return segStatLogic
 
 	# Gets sheet
-	def getSheet(self, workbook, sheetName):
+	def getWorkSheet(self, workbook, sheetName):
 		existingSheetNames = workbook.get_sheet_names()
 		existingSheetNames = [x.encode('UTF8') for x in existingSheetNames]
 
@@ -125,11 +119,23 @@ class StatsCollectorLogic(object):
 			return workbook.create_sheet(sheetName)
 
 	# Make worksheets for raw signal, SNR, and SNR ratio relative to a specific denominator (e.g. the metabolite pyruvate)
-	def advancedData(self, segStatLogicList, denominatorSegStatLogicList):
-		signalWs = self.getSheet("Raw Signal")
-		for i in range(len(segStatLogicList))
-			segStatLogic = segStatLogicList[i]
-
+	def advancedData(self):
+		seg = self.segNode.GetSegmentation()
+		segNames = [seg.GetNthSegment(segIndex).GetName() for segIndex in range(seg.GetNumberOfSegments())]
+		segNames.remove(self.noiseSegment)
+		for wbPath, wb in self.xlWorkbooks.items():
+			rawSignalWs = self.getWorkSheet(wb, "Raw signal")
+			condition = os.path.basename(wbPath).rstrip('.xlsx')
+			for seriesName, series in self.metaStats[condition].items():
+				rawSignalWs.append([seriesName])
+				rawSignalWs.append([''] + segNames)
+				for i in range(len(series)):
+					row = [i + 1]
+					stats = series[i].statistics
+					for segmentID in stats["SegmentIDs"]:
+						if segmentID != self.noiseSegmentID:
+							row += [stats[segmentID, "GS mean"]]
+					rawSignalWs.append(row)
 
 	def getWorkBook(self, workbookName):
 		if not self.xlWorkbooks.has_key(workbookName):
@@ -137,26 +143,16 @@ class StatsCollectorLogic(object):
 		return self.xlWorkbooks[workbookName]
 
 	def exportStatsToXl(self, segStatLogic, xlsxFileName, header="", sheetName=""):
-		# See whether to get SNRs
-		getsnr = len(self.noiseSegment) != 0
 		outputFile = xlsxFileName
-
 		if not xlsxFileName.lower().endswith('.xlsx'):
 			outputFile += '.xlsx'
 
-		wb = getWorkBook(outputFile)
-		
-		if getsnr:
-			segStatLogic.keys += ('SNR',)
-			segmentIDs = segStatLogic.statistics['SegmentIDs']
-			noiseSegmentID = segmentIDs[[segStatLogic.statistics[segID,"Segment"] for segID in segmentIDs].index(self.noiseSegment)]
-			noiseStdev = segStatLogic.statistics[noiseSegmentID, "GS stdev"]
-			segStatLogic = self.computeSnrs(segStatLogic, segmentIDs, noiseStdev)
+		wb = self.getWorkBook(outputFile)
 
 		stats = segStatLogic.exportToString()
 		rows = stats.split('\n')
 
-		self.getSheet(wb, sheetName)
+		ws = self.getWorkSheet(wb, sheetName)
 
 		ws.append([header])
 		columnTitles = rows[0].split(',')
@@ -165,13 +161,10 @@ class StatsCollectorLogic(object):
 		for row in rows[1:]:
 			items = row.split(',')
 			items[:] = [self.digitize(x) for x in items]
-			# items += [items[meanIndex]/noiseStdev]
 			ws.append(items)
 
-
-
 	# Get statistics for a specific volume/timepoint
-	def getStatForVol(self, volFile, fileName, sheetName=""):
+	def getStatForVol(self, volFile, folderSaveName, condition, seriesName=""):
 		# Load master volumes
 		vol = slicer.util.loadVolume(volFile, returnNode=True)
 
@@ -186,9 +179,19 @@ class StatsCollectorLogic(object):
 		segStatLogic = SegmentStatisticsLogic()
 		segStatLogic.computeStatistics(self.segNode, volNode)
 
+		if self.getsnr:
+			noiseStdev = segStatLogic.statistics[self.noiseSegmentID, "GS stdev"]
+			segStatLogic = self.computeSnrs(segStatLogic, segStatLogic.statistics['SegmentIDs'], noiseStdev)
+
+		if seriesName not in self.metaStats[condition]:
+			self.metaStats[condition][seriesName] = []
+
+		# Append current volume's statistics to the statistics database
+		self.metaStats[condition][seriesName].append(segStatLogic)
+
 		# Specify the file name/path
 		documentsDir = os.path.normpath(os.path.expanduser(r"~\\Documents\\StatsCollector\\SegmentStatistics"))
-		filePath = os.path.normpath(documentsDir + "\\" + fileName)
+		filePath = os.path.join(documentsDir, folderSaveName, condition)
 		fileParentDir = os.path.split(filePath)[0]
 
 		# Make the SegmentStatistics directory if it does not exist
@@ -196,8 +199,7 @@ class StatsCollectorLogic(object):
 			os.makedirs(fileParentDir)
 
 		# Export the stats to a file
-		#self.exportStats(segStatLogic, filePath, volNode.GetName())
-		self.exportStatsToXl(segStatLogic, filePath, volNode.GetName(), sheetName)
+		self.exportStatsToXl(segStatLogic, filePath, volNode.GetName(), seriesName)
 
 class MetaExporter(object):
 	def __init__(self, pathToDicoms, pathToConverter, segmentationFile, folderSaveName, keepNrrdDir, noiseSegment):
@@ -207,27 +209,20 @@ class MetaExporter(object):
 
 		# Get all stats
 		dcmDictionary = self.converter.convertToNrrd()
-		#for metabolite, nrrdList in dcmDictionary.items():
-		#	for nrrd in nrrdList:
-		#		saveName = self.folderSaveName + "\\" + metabolite
-		#		self.sc.getStatForVol(nrrd, saveName)
-
 		
 		for condition, conditionDict in dcmDictionary.items():
-			for metabolite, timepoints in conditionDict.items():
-				for timepoint in timepoints:
-					saveName = self.folderSaveName + "\\" + condition
-					self.sc.getStatForVol(timepoint, saveName, metabolite)
+			if not condition in self.sc.metaStats:
+				self.sc.metaStats[condition] = {}
+			for metabolite, volumes in conditionDict.items():
+				for volume in volumes:
+					saveName = os.path.join(self.folderSaveName, condition)
+					self.sc.getStatForVol(volume, folderSaveName, condition, metabolite)
 
 		# Export stats to XLSX files
+		self.sc.advancedData()
 		for wbName, wb in self.sc.xlWorkbooks.items():
 			wb.remove_sheet(wb.worksheets[0])
 			wb.save(wbName)
-			#for sh in wb.worksheets:
-			#	#TEMP
-			#	sh = wb.create_sheet()
-			#	sh.values
-			
 
 		# Delete the NrrdOutput directory by default
 		if not keepNrrdDir:
