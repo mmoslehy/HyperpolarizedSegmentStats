@@ -12,7 +12,7 @@ argParser = ArgumentParser(sys.argv)
 try:
 	argParser.ValidateAllArgs()
 except ArgumentError as err:
-	logging.error("ERROR: " + err.message)
+	logging.error("\nERROR: " + err.message)
 	logging.error(argParser.GetUsage())
 
 # Otherwise, store the pathname provided as an argument
