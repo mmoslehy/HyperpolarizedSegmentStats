@@ -131,7 +131,7 @@ class StatsCollectorLogic(object):
 			denominatorMetaboliteSeries = self.metaStats[condition][denominatorMetabolite]
 			for seriesName, series in self.metaStats[condition].items():
 				rawSignalWs.append([seriesName])
-				rawSignalWs.append([''] + segNames)
+				rawSignalWs.append([''] + segNames + ['BG STDEV'])
 				snrSignalWs.append([seriesName])
 				snrSignalWs.append([''] + segNames)
 				if seriesName != denominatorMetabolite:
@@ -148,7 +148,8 @@ class StatsCollectorLogic(object):
 							rawRow += [stats[segmentID, "GS mean"]]
 							snrRow += [stats[segmentID, "SNR"]]
 							if seriesName != denominatorMetabolite:
-								ratioRow += [stats[segmentID, "SNR"]/denominatorMetaboliteSeries[i].statistics[segmentID, "SNR"]]
+								ratioRow += [stats[segmentID, "SNR"] / denominatorMetaboliteSeries[i].statistics[segmentID, "SNR"]]
+					rawRow += [stats[self.noiseSegmentID, "GS stdev"]]
 					rawSignalWs.append(rawRow)
 					snrSignalWs.append(snrRow)
 					if seriesName != denominatorMetabolite:

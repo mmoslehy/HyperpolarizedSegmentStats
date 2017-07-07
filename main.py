@@ -25,5 +25,6 @@ else:
 	folderSaveName = argParser.GetArg("foldersavename")[0]
 	keepNrrdDir = argParser.GetArg("keepnrrddir")
 	snrSegment = argParser.GetArg("getsnr")[0]
+	denominatorMetabolite = argParser.GetArg("denominatormetabolite")[0]
 
-	me = statscollector.MetaExporter(pathToDicoms, pathToConverter, segmentationFile, folderSaveName, keepNrrdDir, snrSegment)
+	me = statscollector.MetaExporter(pathToDicoms, pathToConverter, segmentationFile, folderSaveName, keepNrrdDir, snrSegment, denominatorMetabolite)

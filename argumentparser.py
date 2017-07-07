@@ -28,7 +28,7 @@ class ArgumentParser(object):
 
 	def __init__(self, sysArgs):
 		# ArgDict[ArgName, [ArgType, Optional]]
-		self.argDict = {"pathtodicoms":["path",False], "segmentationfile":["path", False], "foldersavename":["name", False], "keepnrrddir":["boolean", True], "getsnr":["segmentName", True]}
+		self.argDict = {"pathtodicoms":["path",False], "segmentationfile":["path", False], "foldersavename":["name", False], "keepnrrddir":["boolean", True], "getsnr":["segmentName", True], "denominatormetabolite":["name", True]}
 		self.args = self.ParseArgs(sysArgs)
 
 	def ValidateArg(self, arg, argValues):
@@ -67,6 +67,9 @@ class ArgumentParser(object):
 			if argValues[0] not in segNames:
 				raise ArgumentError("Segment '" + argValues[0] + "' was not found in segmentation at: " + segFile + '\nFound Segments: ' + str(segNames))
 				return False
+		# elif argType == "dcmFolder":
+		# 	folderName = argValues[0]
+
 
 	   # If all is satisfied, the argument is valid
 		return True
