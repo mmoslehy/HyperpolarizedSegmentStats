@@ -230,10 +230,12 @@ class StatsCollectorLogic(object):
 		self.exportStatsToXl(segStatLogic, filePath, volNode.GetName(), seriesName)
 
 class MetaExporter(object):
-	def __init__(self, pathToDicoms, pathToConverter, segmentationFile, folderSaveName, keepNrrdDir, noiseSegment, denominatorMetabolite):
+	def __init__(self, pathToDicoms, pathToConverter, segmentationFile, folderSaveName, keepNrrdDir, 
+		noiseSegment, denominatorMetabolite, excludeDirs):
 		self.converter = NrrdConverterLogic(pathToDicoms, pathToConverter)
 		self.sc = StatsCollectorLogic(segmentationFile, noiseSegment)
 		self.folderSaveName = folderSaveName
+		# self.excludeDirs = excludeDirs
 		if len(denominatorMetabolite) == 0:
 			self.denominatorMetabolite = "01_pyrBy6"
 		else:
@@ -241,8 +243,6 @@ class MetaExporter(object):
 
 		# Get all volume names
 		dcmDictionary = self.converter.convertToNrrd()
-		# Check if all condition directories have the same parent directory
-		# if 
 		
 		for condition, conditionDict in dcmDictionary.items():
 			if not condition in self.sc.metaStats:

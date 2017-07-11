@@ -13,11 +13,12 @@ class ArgumentParser(object):
 		currentArg = ""
 		for arg in sysArgs[1:]:
 			if arg.startswith('--'):
+				arg = arg.lower().lstrip('--')
 				if arg not in args:
-					currentArg = arg.lstrip('--').lower()
+					currentArg = arg
 					args[currentArg] = []
 				else:
-					raise ArgumentError("Argument " + arg.lstrip('--') + " already specified", arg)
+					raise ArgumentError("Argument " + arg + " already specified")
 			else:
 				if len(currentArg) == 0:
 					raise ArgumentError("Arguments must start with '--'")
@@ -28,7 +29,15 @@ class ArgumentParser(object):
 
 	def __init__(self, sysArgs):
 		# ArgDict[ArgName, [ArgType, Optional]]
-		self.argDict = {"pathtodicoms":[["path"],False], "segmentationfile":[["path"], False], "foldersavename":[["name"], False], "keepnrrddir":[["boolean"], True], "getsnr":[["segmentName"], True], "denominatormetabolite":[["name", "dcmFolder"], True]}
+		self.argDict = {
+		"pathtodicoms":[["path"],False],
+		"segmentationfile":[["path"], False],
+		"foldersavename":[["name"], False],
+		"keepnrrddir":[["boolean"], True],
+		"getsnr":[["segmentName"], True],
+		"denominatormetabolite":[["name", "dcmFolder"], True],
+		"excludedirs":[["path"], True]
+		}
 		self.args = self.ParseArgs(sysArgs)
 
 	def ValidateArg(self, arg, argValues):
@@ -43,7 +52,7 @@ class ArgumentParser(object):
 				return False
 			if argType == "path":
 				if not os.path.exists(argValues[0]):
-					raise ArgumentError("File not found: " + argValues[0])
+					raise ArgumentError("File/folder not found: " + argValues[0])
 					return False
 			elif argType == "name":
 				if len(argValues[0]) == 0:
