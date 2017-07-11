@@ -39,8 +39,8 @@ class NrrdConverterLogic(object):
 	# Convert all DICOMs to Nrrd files with the names of their respective DICOM directories
 	def convertToNrrd(self):
 		dicomDirs = self.getDicomDirs()
-		condDictionary = {}
 		dcmDictionary = {}
+		parentPaths = []
 		for dicomDir in dicomDirs:
 			# Specify the output nrrd file name
 			nrrdFile = os.path.split(dicomDir)[1]
@@ -48,8 +48,12 @@ class NrrdConverterLogic(object):
 			metaboliteDirPath = os.path.split(os.path.split(dicomDir)[0])
 			# This is the directory above the directory containing the DICOMs (e.g. if pyrBy6/8001/x.dcm then this is PyBy6)
 			metaboliteDirName = metaboliteDirPath[1]
+			# Get the directory path above the metabolite directory (e.g. C:\Data\Subj101\100percentOxygen)
+			conditionPaths = os.path.split(metaboliteDirPath[0])
+			# Get path of the folder containing the condition directories
+			subjectPath = conditionPaths[0]
 			# Get the directory name above the metabolite directory (e.g. 100percentOxygen)
-			conditionDir = os.path.split(metaboliteDirPath[0])[1]
+			conditionDir = conditionPaths[1]
 			# Directory to hold Nrrd files
 			documentsDir = os.path.normpath(os.path.expanduser(r"~\\Documents\\StatsCollector\\NrrdOutput"))
 			if not os.path.exists(documentsDir):
@@ -63,20 +67,26 @@ class NrrdConverterLogic(object):
 			# Use DicomToNrrdConverter.exe to convert all DICOMs, inserting their output file paths into a dictionary to return after execution, supress stdout of converter
 			os.system(execString + " > nul")
 
-			key = conditionDir
-
 			# Append nrrd file names to dictionary
-			if not dcmDictionary.has_key(key):
-				dcmDictionary[key] = {}
+			if not dcmDictionary.has_key(conditionDir):
+				dcmDictionary[conditionDir] = {}
 			
-			if not dcmDictionary[key].has_key(metaboliteDirName):
-				dcmDictionary[key][metaboliteDirName] = []
+			if not dcmDictionary[conditionDir].has_key(metaboliteDirName):
+				dcmDictionary[conditionDir][metaboliteDirName] = []
 
-			dcmDictionary[key][metaboliteDirName].append(outputFilePath)
+			dcmDictionary[conditionDir][metaboliteDirName].append(outputFilePath)
 			
-
 			# Inform the user that the DICOMs were successfully converted
 			logging.info("Successfully converted DICOMs in " + parentFolder)
+
+			parentPaths.append(subjectPath)
+
+		# Remove duplicates from parentPath list
+		parentPaths = list(set(parentPaths))
+		# Check if the conditions live in different places
+		if len(parentPaths) > 1:
+			raise IOError("The condition directories live in different folders, they must all be in the same folder...\nFound folders:" + str(parentPaths))
+
 		return dcmDictionary
 
 class StatsCollectorLogic(object):
@@ -229,13 +239,16 @@ class MetaExporter(object):
 		else:
 			self.denominatorMetabolite = denominatorMetabolite
 
-		# Get all stats
+		# Get all volume names
 		dcmDictionary = self.converter.convertToNrrd()
+		# Check if all condition directories have the same parent directory
+		# if 
 		
 		for condition, conditionDict in dcmDictionary.items():
 			if not condition in self.sc.metaStats:
 				self.sc.metaStats[condition] = {}
 			for metabolite, volumes in conditionDict.items():
+				# Get stats for each volume
 				for volume in volumes:
 					saveName = os.path.join(self.folderSaveName, condition)
 					self.sc.getStatForVol(volume, self.folderSaveName, condition, metabolite)
