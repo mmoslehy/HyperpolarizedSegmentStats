@@ -80,7 +80,7 @@ class ArgumentParser(object):
 							parentPath = os.path.split(root)[0]
 							parentFolder = os.path.split(parentPath)[1]
 							dicomDirs.append(parentFolder)
-							
+
 				# Remove duplicates
 				dicomDirs = list(set(dicomDirs))
 
@@ -104,18 +104,33 @@ class ArgumentParser(object):
 
 		return True
 	
+	# def GetArg(self, argName):
+	# 	if argName in self.args:	
+	# 		if "boolean" in self.argDict[argName][0]:
+	# 			return True
+	# 		else:
+	# 			return self.args[argName]
+	# 	else:
+	# 		# Return false by default if the missing argument is a boolean
+	# 		if "boolean" in self.argDict[argName][0]:
+	# 			return False
+	# 		# If the argument is not a boolean, return an empty string list
+	# 		else:
+	# 			return [""]
+
 	def GetArg(self, argName):
-		if argName in self.args:	
-			if self.argDict[argName][0] == "boolean":
-				return True
-			return self.args[argName]
+		# If the argument is a boolean, return whether it was provided or not
+		if "boolean" in self.argDict[argName][0]:
+			return argName in self.args
+		# If the argument is other than a boolean
 		else:
-			# Return false by default if the missing argument is a boolean
-			if self.argDict[argName][0] == "boolean":
-				return False
-			# If the argument was not provided, return an empty string list
+			# If it was provided, return its value
+			if argName in self.args:
+				return self.args[argName]
+			# If it was not provided, return an empty string list
 			else:
 				return [""]
+
 	def GetUsage(self, scriptName=""):
 		usage = "\nUSAGE: " + scriptName + "\n"
 		for argName, argFormat in self.argDict.items():
