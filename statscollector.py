@@ -44,18 +44,18 @@ class NrrdConverterLogic(object):
 		for dicomDir in dicomDirs:
 			# Specify the output nrrd file name
 			nrrdFile = os.path.split(dicomDir)[1]
-			# Get an array of the parent directory, with position 0 being the parent and 1 being the child (see three lines below)
-			parentDir = os.path.split(os.path.split(dicomDir)[0])
-			# This is the directory above the directory containing the DICOMs (e.g. if PyBy6/8001/x.dcm then this is PyBy6)
-			metaboliteDir = parentDir[1]
+			# Get the full path of the metabolite folder and its parent
+			metaboliteDirPath = os.path.split(os.path.split(dicomDir)[0])
+			# This is the directory above the directory containing the DICOMs (e.g. if pyrBy6/8001/x.dcm then this is PyBy6)
+			metaboliteDirName = metaboliteDirPath[1]
 			# Get the directory name above the metabolite directory (e.g. 100percentOxygen)
-			conditionDir = os.path.split(parentDir[0])[1]
+			conditionDir = os.path.split(metaboliteDirPath[0])[1]
 			# Directory to hold Nrrd files
 			documentsDir = os.path.normpath(os.path.expanduser(r"~\\Documents\\StatsCollector\\NrrdOutput"))
 			if not os.path.exists(documentsDir):
 				os.makedirs(documentsDir)
 			# Parent folder name holding the Nrrd files, will be used to specify the CSV file names
-			parentFolder = conditionDir + "-" + metaboliteDir
+			parentFolder = conditionDir + "-" + metaboliteDirName
 			# Nrrd file path
 			outputFilePath = os.path.normpath(documentsDir + "\\" + parentFolder + "_" + nrrdFile + ".nrrd")
 			runnerPath = os.path.split(self.converter)[0] + '\\runner.bat'
@@ -69,10 +69,10 @@ class NrrdConverterLogic(object):
 			if not dcmDictionary.has_key(key):
 				dcmDictionary[key] = {}
 			
-			if not dcmDictionary[key].has_key(metaboliteDir):
-				dcmDictionary[key][metaboliteDir] = []
+			if not dcmDictionary[key].has_key(metaboliteDirName):
+				dcmDictionary[key][metaboliteDirName] = []
 
-			dcmDictionary[key][metaboliteDir].append(outputFilePath)
+			dcmDictionary[key][metaboliteDirName].append(outputFilePath)
 			
 
 			# Inform the user that the DICOMs were successfully converted
@@ -220,10 +220,14 @@ class StatsCollectorLogic(object):
 		self.exportStatsToXl(segStatLogic, filePath, volNode.GetName(), seriesName)
 
 class MetaExporter(object):
-	def __init__(self, pathToDicoms, pathToConverter, segmentationFile, folderSaveName, keepNrrdDir, noiseSegment, denominatorMetabolite="01_pyrBy6"):
+	def __init__(self, pathToDicoms, pathToConverter, segmentationFile, folderSaveName, keepNrrdDir, noiseSegment, denominatorMetabolite):
 		self.converter = NrrdConverterLogic(pathToDicoms, pathToConverter)
 		self.sc = StatsCollectorLogic(segmentationFile, noiseSegment)
 		self.folderSaveName = folderSaveName
+		if len(denominatorMetabolite) == 0:
+			self.denominatorMetabolite = "01_pyrBy6"
+		else:
+			self.denominatorMetabolite = denominatorMetabolite
 
 		# Get all stats
 		dcmDictionary = self.converter.convertToNrrd()
@@ -234,10 +238,10 @@ class MetaExporter(object):
 			for metabolite, volumes in conditionDict.items():
 				for volume in volumes:
 					saveName = os.path.join(self.folderSaveName, condition)
-					self.sc.getStatForVol(volume, folderSaveName, condition, metabolite)
+					self.sc.getStatForVol(volume, self.folderSaveName, condition, metabolite)
 
 		# Export stats to XLSX files
-		self.sc.advancedData(denominatorMetabolite)
+		self.sc.advancedData(self.denominatorMetabolite)
 		for wbName, wb in self.sc.xlWorkbooks.items():
 			wb.remove_sheet(wb.worksheets[0])
 			wb.save(wbName)

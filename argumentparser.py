@@ -28,7 +28,7 @@ class ArgumentParser(object):
 
 	def __init__(self, sysArgs):
 		# ArgDict[ArgName, [ArgType, Optional]]
-		self.argDict = {"pathtodicoms":[["path"],False], "segmentationfile":[["path"], False], "foldersavename":[["name"], False], "keepnrrddir":[["boolean"], True], "getsnr":[["segmentName"], True], "denominatormetabolite":[["name"], True]}
+		self.argDict = {"pathtodicoms":[["path"],False], "segmentationfile":[["path"], False], "foldersavename":[["name"], False], "keepnrrddir":[["boolean"], True], "getsnr":[["segmentName"], True], "denominatormetabolite":[["name", "dcmFolder"], True]}
 		self.args = self.ParseArgs(sysArgs)
 
 	def ValidateArg(self, arg, argValues):
@@ -68,8 +68,17 @@ class ArgumentParser(object):
 				if argValues[0] not in segNames:
 					raise ArgumentError("Segment '" + argValues[0] + "' was not found in segmentation at: " + segFile + '\nFound Segments: ' + str(segNames))
 					return False
-		# elif argType == "dcmFolder":
-		# 	folderName = argValues[0]
+			elif argType == "dcmFolder":
+				pathToDicoms = self.args["pathtodicoms"][0]
+				folderName = argValues[0]
+				pathWalk = os.walk(pathToDicoms)
+				dicomDirs = []
+				for root, dirs, files in pathWalk:
+					for file in files:
+						if file.lower().endswith(".dcm") or file.lower().endswith(".ima"):
+							dicomDirs.append(root)
+				if folderName not in dicomDirs:
+					raise ArgumentError("The specified folder does not contain any .dcm or .ima files: " + folderName)
 
 
 	   # If all is satisfied, the argument is valid
