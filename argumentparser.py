@@ -76,9 +76,16 @@ class ArgumentParser(object):
 				for root, dirs, files in pathWalk:
 					for file in files:
 						if file.lower().endswith(".dcm") or file.lower().endswith(".ima"):
-							dicomDirs.append(root)
+							# Get the metabolite folder name (parent of the volume folder)
+							parentPath = os.path.split(root)[0]
+							parentFolder = os.path.split(parentPath)[1]
+							dicomDirs.append(parentFolder)
+							
+				# Remove duplicates
+				dicomDirs = list(set(dicomDirs))
+
 				if folderName not in dicomDirs:
-					raise ArgumentError("The specified folder does not contain any .dcm or .ima files: " + folderName)
+					raise ArgumentError("The specified folder does not contain any .dcm or .ima files: " + folderName + '\nFound directories: ' + str(dicomDirs))
 
 
 	   # If all is satisfied, the argument is valid
