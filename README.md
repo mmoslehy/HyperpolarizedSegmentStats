@@ -2,7 +2,7 @@
 ###### Currently only supported in Windows
 
 ## Instructions:
-- [Download and install Slicer 4.7 (Currently the Nightly Build)](https://download.slicer.org/)
+- [Download and install Slicer 4.7 or newer (Currently the Nightly Build)](https://download.slicer.org/)
 - [Download and install Git Bash (press next all the way through)](https://git-scm.com/downloads)
 - Run Git Bash and execute the following command:
 	`git clone https://github.com/mmoslehy/HyperpolarizedSegmentStats`
