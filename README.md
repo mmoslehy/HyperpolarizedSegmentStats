@@ -6,11 +6,11 @@
 
 *args:*
 
---foldersavename ['name']
---hiderawsheets ['boolean'] (optional)
---segmentationfile ['path']
---keepnrrddir ['boolean'] (optional)
---excludedirs ['name'] (optional)
---denominatormetabolite ['name', 'dcmFolder'] (optional)
---pathtodicoms ['path']
---getsnr ['segmentName'] (optional)
+- --foldersavename ['name']
+- --hiderawsheets ['boolean'] (optional)
+- --segmentationfile ['path']
+- --keepnrrddir ['boolean'] (optional)
+- --excludedirs ['name'] (optional)
+- --denominatormetabolite ['name', 'dcmFolder'] (optional)
+- --pathtodicoms ['path']
+- --getsnr ['segmentName'] (optional)
