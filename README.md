@@ -1,8 +1,8 @@
-# Works with 3D Slicer to extract 4D data from segmented DICOMs
+# Works with 3D Slicer to extract 4D data from segmented DICOMs :cake:
 
-###### USAGE:
+## USAGE:
 
-Slicer.exe --python-script main.py [args] [--exit-after-startup]
+######Slicer.exe --python-script main.py [args] [--exit-after-startup]
 
 possible args:
 --foldersavename ['name']
