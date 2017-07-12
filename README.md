@@ -26,6 +26,7 @@
 | --hiderawsheets			| boolean			|
 
 _\*are required_
+
 _\*\*can be a list of names_
 
 ## Example:
