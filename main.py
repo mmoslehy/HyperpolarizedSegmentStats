@@ -2,9 +2,9 @@ import os, sys, logging
 from argumentparser import ArgumentParser, ArgumentError
 import statscollector
 # Debugging
-# import ptvsd
-# ptvsd.enable_attach(secret='s')
-# ptvsd.wait_for_attach()
+import ptvsd
+ptvsd.enable_attach(secret='s')
+ptvsd.wait_for_attach()
 #End debug
 
 
@@ -26,6 +26,6 @@ else:
 	keepNrrdDir = argParser.GetArg("keepnrrddir")
 	snrSegment = argParser.GetArg("getsnr")[0]
 	denominatorMetabolite = argParser.GetArg("denominatormetabolite")[0]
-	excludedirs = argParser.GetArg("excludedirs")[0]
+	excludedirs = argParser.GetArg("excludedirs")
 
 	me = statscollector.MetaExporter(pathToDicoms, pathToConverter, segmentationFile, folderSaveName, keepNrrdDir, snrSegment, denominatorMetabolite, excludedirs)

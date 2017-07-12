@@ -15,9 +15,10 @@ import openpyxl
 class NrrdConverterLogic(object):
 
 	# Constructor for the DicomToNrrdConverter
-	def __init__(self, pathToDicoms, pathToConverter):
+	def __init__(self, pathToDicoms, pathToConverter, excludeDirs):
 		self.pathToDicoms = os.path.normpath(pathToDicoms)
 		self.converter = os.path.normpath(pathToConverter)
+		self.excludeDirs = excludeDirs
 		if not os.path.exists(self.pathToDicoms) or not os.path.exists(self.converter):
 			print("DICOMs or DicomToNrrdConverter.exe does not exist")
 			quit()
@@ -27,9 +28,11 @@ class NrrdConverterLogic(object):
 		pathWalk = os.walk(self.pathToDicoms)
 		dicomDirs = []
 		for root, dirs, files in pathWalk:
-			for file in files:
-				if file.lower().endswith(".dcm") or file.lower().endswith(".ima"):
-					dicomDirs.append(root)
+			# Only consider folder names that are not supposed to be excluded
+			if os.path.split(root)[1] not in self.excludeDirs:
+				for file in files:
+					if file.lower().endswith(".dcm") or file.lower().endswith(".ima"):
+						dicomDirs.append(root)
 		# Remove duplicates
 		noDuplicates = list(set(dicomDirs))
 		# Sort the list
@@ -85,7 +88,9 @@ class NrrdConverterLogic(object):
 		parentPaths = list(set(parentPaths))
 		# Check if the conditions live in different places
 		if len(parentPaths) > 1:
-			raise IOError("The condition directories live in different folders, they must all be in the same folder...\nFound folders:" + str(parentPaths))
+			message = "The condition directories live in different folders, they must all be in the same folder...\nFound folders that contain possible conditions:" + str(parentPaths)
+			message += "\nConsider using the '--excludedirs' argument to exclude specific Dicom-containing folders"
+			raise IOError(message)
 
 		return dcmDictionary
 
@@ -232,10 +237,10 @@ class StatsCollectorLogic(object):
 class MetaExporter(object):
 	def __init__(self, pathToDicoms, pathToConverter, segmentationFile, folderSaveName, keepNrrdDir, 
 		noiseSegment, denominatorMetabolite, excludeDirs):
-		self.converter = NrrdConverterLogic(pathToDicoms, pathToConverter)
+		self.converter = NrrdConverterLogic(pathToDicoms, pathToConverter, excludeDirs)
 		self.sc = StatsCollectorLogic(segmentationFile, noiseSegment)
 		self.folderSaveName = folderSaveName
-		# self.excludeDirs = excludeDirs
+		self.excludeDirs = excludeDirs
 		if len(denominatorMetabolite) == 0:
 			self.denominatorMetabolite = "01_pyrBy6"
 		else:
