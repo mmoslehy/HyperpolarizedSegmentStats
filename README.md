@@ -7,7 +7,7 @@
 #### **_args:_**
 
 | Argument					| Type				| Optional	|
-| ------------------------- |:-----------------:|:---------:|
+| ------------------------- | ----------------- |:---------:|
 | --foldersavename			| Name				| No		|
 | --segmentationfile		| Path				| No		|
 | --pathtodicoms			| Path				| No		|
