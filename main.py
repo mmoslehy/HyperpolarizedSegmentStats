@@ -18,14 +18,14 @@ except ArgumentError as err:
 # Otherwise, store the pathname provided as an argument
 else:
 	# Assume the Dicom To Nrrd Converter is in the same folder as this script
-	pathToConverter = os.path.join(os.path.split(sys.argv[0])[0], "DicomToNrrdConverter.exe")
+	pathtoconverter = os.path.join(os.path.split(sys.argv[0])[0], "DicomToNrrdConverter.exe")
 	# Get parsed arguments
-	pathToDicoms = argParser.GetArg("pathtodicoms")[0]
-	segmentationFile = argParser.GetArg("segmentationfile")[0]
-	folderSaveName = argParser.GetArg("foldersavename")[0]
-	keepNrrdDir = argParser.GetArg("keepnrrddir")
-	snrSegment = argParser.GetArg("getsnr")[0]
-	denominatorMetabolite = argParser.GetArg("denominatormetabolite")[0]
+	pathtodicoms = argParser.GetArg("pathtodicoms")[0]
+	segmentationfile = argParser.GetArg("segmentationfile")[0]
+	foldersaveName = argParser.GetArg("foldersavename")[0]
+	keepnrrddir = argParser.GetArg("keepnrrddir")
+	snrsegment = argParser.GetArg("getsnr")[0]
+	denominatormetabolite = argParser.GetArg("denominatormetabolite")[0]
 	excludedirs = argParser.GetArg("excludedirs")
-
-	me = statscollector.MetaExporter(pathToDicoms, pathToConverter, segmentationFile, folderSaveName, keepNrrdDir, snrSegment, denominatorMetabolite, excludedirs)
+	hiderawsheets = argParser.GetArg("hiderawsheets")
+	me = statscollector.MetaExporter(pathtodicoms, pathtoconverter, segmentationfile, foldersaveName, keepnrrddir, snrsegment, denominatormetabolite, excludedirs, hiderawsheets)

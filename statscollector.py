@@ -236,7 +236,7 @@ class StatsCollectorLogic(object):
 
 class MetaExporter(object):
 	def __init__(self, pathToDicoms, pathToConverter, segmentationFile, folderSaveName, keepNrrdDir, 
-		noiseSegment, denominatorMetabolite, excludeDirs):
+		noiseSegment, denominatorMetabolite, excludeDirs, hideRawSheets):
 		self.converter = NrrdConverterLogic(pathToDicoms, pathToConverter, excludeDirs)
 		self.sc = StatsCollectorLogic(segmentationFile, noiseSegment)
 		self.folderSaveName = folderSaveName
@@ -262,7 +262,19 @@ class MetaExporter(object):
 		self.sc.advancedData(self.denominatorMetabolite)
 		for wbName, wb in self.sc.xlWorkbooks.items():
 			wb.remove_sheet(wb.worksheets[0])
-			wb.save(wbName)
+			if hideRawSheets:
+				worksheets = wb.get_sheet_names()
+				keepnames = ["Raw Signal", "SNR", "Ratios"]
+				for wsname in worksheets:
+					if wsname not in keepnames:
+						ws = wb.get_sheet_by_name(wsname)
+						ws.sheet_state = 'hidden'
+			try:
+				wb.save(wbName)
+			except IOError as e:
+				print str(e)
+				e.strerror += '\nPerhaps the file is open or used by another application'
+				raise e
 
 		# Delete the NrrdOutput directory by default
 		if not keepNrrdDir:

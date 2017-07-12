@@ -36,7 +36,8 @@ class ArgumentParser(object):
 		"keepnrrddir":[["boolean"], True],
 		"getsnr":[["segmentName"], True],
 		"denominatormetabolite":[["name", "dcmFolder"], True],
-		"excludedirs":[["name"], True]
+		"excludedirs":[["name"], True],
+		"hiderawsheets":[["boolean"], True]
 		}
 		self.args = self.ParseArgs(sysArgs)
 
