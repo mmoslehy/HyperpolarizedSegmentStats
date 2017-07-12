@@ -11,7 +11,8 @@
 - --pathtodicoms ['path']
 - --keepnrrddir ['boolean'] *(optional)*
 - --excludedirs ['name'] *(optional)*
-   This can be a list of names
+   
+   *This can be a list of names*
 - --getsnr ['segmentName'] *(optional)*
 - --denominatormetabolite ['name', 'dcmFolder'] *(optional)*
 - --hiderawsheets ['boolean'] *(optional)*
