@@ -16,3 +16,7 @@
 - --getsnr ['segmentName'] *(optional)*
 - --denominatormetabolite ['name', 'dcmFolder'] *(optional)*
 - --hiderawsheets ['boolean'] *(optional)*
+
+| Argument			| Type		| Optional		| Notes	|
+| ----------------- |:---------:| -------------:| ----- |
+| --foldersavename	| Name		| No			|		|
