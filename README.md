@@ -12,7 +12,7 @@
 | --segmentationfile		| Path				| No		|
 | --pathtodicoms			| Path				| No		|
 | --keepnrrddir				| Boolean			| Yes		|
-| --excludedirs\*				| Name				| Yes		|
+| --excludedirs\*			| Name				| Yes		|
 | --getsnr					| SegmentName		| Yes		|
 | --denominatormetabolite	| Name				| Yes		|
 | --hiderawsheets			| boolean			| Yes		|
