@@ -28,4 +28,4 @@
 | --denominatormetabolite	| Name				| Yes		|
 | --hiderawsheets			| boolean			| Yes		|
 
-**\*_Can be a list of names_**
+\*_Can be a list of names_
