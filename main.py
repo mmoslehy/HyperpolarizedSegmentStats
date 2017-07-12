@@ -2,9 +2,9 @@ import os, sys, logging
 from argumentparser import ArgumentParser, ArgumentError
 import statscollector
 # Debugging
-import ptvsd
-ptvsd.enable_attach(secret='s')
-ptvsd.wait_for_attach()
+# import ptvsd
+# ptvsd.enable_attach(secret='s')
+# ptvsd.wait_for_attach()
 #End debug
 
 
