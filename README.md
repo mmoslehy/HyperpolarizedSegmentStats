@@ -4,7 +4,7 @@
 
 ### Slicer.exe --python-script main.py [args] [--exit-after-startup]
 
-#### **args:**
+#### **_args:_**
 
 - --foldersavename ['name']
 - --hiderawsheets ['boolean'] (optional)
