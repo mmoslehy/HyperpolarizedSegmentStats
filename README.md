@@ -2,9 +2,9 @@
 
 ## USAGE:
 
-######Slicer.exe --python-script main.py [args] [--exit-after-startup]
+###### Slicer.exe --python-script main.py [args] [--exit-after-startup]
 
-possible args:
+*args:*
 --foldersavename ['name']
 --hiderawsheets ['boolean'] (optional)
 --segmentationfile ['path']
