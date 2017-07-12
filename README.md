@@ -7,10 +7,10 @@
 #### **_args:_**
 
 - --foldersavename ['name']
-- --hiderawsheets ['boolean'] (optional)
+- --hiderawsheets ['boolean'] *(optional)*
 - --segmentationfile ['path']
-- --keepnrrddir ['boolean'] (optional)
-- --excludedirs ['name'] (optional)
-- --denominatormetabolite ['name', 'dcmFolder'] (optional)
+- --keepnrrddir ['boolean'] *(optional)*
+- --excludedirs ['name'] *(optional)*
+- --denominatormetabolite ['name', 'dcmFolder'] *(optional)*
 - --pathtodicoms ['path']
-- --getsnr ['segmentName'] (optional)
+- --getsnr ['segmentName'] *(optional)*
