@@ -2,7 +2,7 @@
 
 ## USAGE:
 
-###### Slicer.exe --python-script main.py [args] [--exit-after-startup]
+### Slicer.exe --python-script main.py [args] [--exit-after-startup]
 
 *args:*
 --foldersavename ['name']
