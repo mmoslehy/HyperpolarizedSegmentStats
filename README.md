@@ -5,17 +5,6 @@
 ### Slicer.exe --python-script main.py [args] [--exit-after-startup]
 
 #### **_args:_**
-<!-- 
-- --foldersavename ['name']
-- --segmentationfile ['path']
-- --pathtodicoms ['path']
-- --keepnrrddir ['boolean'] *(optional)*
-- --excludedirs ['name'] *(optional)*
-   
-   *This can be a list of names*
-- --getsnr ['segmentName'] *(optional)*
-- --denominatormetabolite ['name', 'dcmFolder'] *(optional)*
-- --hiderawsheets ['boolean'] *(optional)* -->
 
 | Argument					| Type				| Optional	|
 | ------------------------- |:-----------------:|:---------:|
