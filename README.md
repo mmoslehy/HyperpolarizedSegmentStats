@@ -15,7 +15,7 @@ The script will be at `%USERPROFILE%\HyperpolarizedSegmentStats`
 
 **The script will save all the data in `%USERPROFILE%\Documents\StatsCollector`**
 
-## USAGE:
+## Usage:
 
 ### `Slicer.exe --python-script %USERPROFILE%\HyperpolarizedSegmentStats\main.py args [--exit-after-startup]`
 
