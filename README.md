@@ -8,7 +8,9 @@
 	`git clone https://github.com/mmoslehy/HyperpolarizedSegmentStats`
 The script will be at `%USERPROFILE%\HyperpolarizedSegmentStats`
 - From Command Prompt, run the script using Slicer's `--python-script` argument (see [example](#example))
+
 *If you want Slicer to exit after the script is done execution, also use Slicer's `--exit-after-startup` argument*
+
 **The script will save all the data in `%USERPROFILE%\Documents\StatsCollector`**
 
 ## USAGE:
