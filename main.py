@@ -1,11 +1,15 @@
 import os, sys, logging
 from argumentparser import ArgumentParser, ArgumentError
 import statscollector
-# Debugging
-# import ptvsd
-# ptvsd.enable_attach(secret='s')
-# ptvsd.wait_for_attach()
-#End debug
+## Debugging
+def dbg():
+	import ptvsd
+	ptvsd.enable_attach(secret='s')
+	ptvsd.wait_for_attach()
+
+# Uncomment this line to enable debugging in Visual Studio
+# dbg()
+## End debug
 
 
 argParser = ArgumentParser(sys.argv)
