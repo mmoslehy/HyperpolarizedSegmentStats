@@ -7,11 +7,11 @@ import openpyxl
 """
 By: Mohamed Moselhy (Western University), 2017
 Uses 3DSlicer's SegmentStatistics module to extract data from hyperpolarized Carbon-13 scans
-Multiple conditions, time points, and metabolites can be given
+Multiple conditions, timepoints, and metabolites can be given
 The segmentation file must be in a format that is readable by 3DSlicer as a vtkMRMLSegmentationNode (by convention the file name ends with .seg.nrrd, but that is not required)
 The outputs of this script are stored in the user's Documents folder under a folder named 'StatsCollector'
 
-Note: This script assumes that the number of volumes (time points) for all metabolites are the same
+Note: This script assumes that the number of volumes (timepoints) for all metabolites are the same
 """
 
 
@@ -58,8 +58,8 @@ class NrrdConverterLogic(object):
 	def convertToNrrd(self):
 		# Get all DICOM directory paths as a list
 		dicomDirs = self.getDicomDirs()
-		# Initialize a dictionary to keep track of which DICOMs correspond to which condition, metabolite, and time point
-		dcmDictionary = {}
+		# Initialize a dictionary to keep track of which volumes correspond to which condition and metabolite
+		nrrdDictionary = {}
 		# Initialize a list to store the folder names in which the condition directories reside, to assess correct folder structure
 		parentPaths = []
 		for dicomDir in dicomDirs:
@@ -91,17 +91,17 @@ class NrrdConverterLogic(object):
 			os.system(execString + " > nul")
 
 			# If the dictionary does not contain data for the current volume's condition, create it
-			if not dcmDictionary.has_key(conditionDir):
+			if not nrrdDictionary.has_key(conditionDir):
 				# Initialize an internal dictionary that contains a list of metabolites as the value, specified by the condition folder name as the key
-				dcmDictionary[conditionDir] = {}
+				nrrdDictionary[conditionDir] = {}
 			
 			# If the internal dictionary does not have data for the current volume's metabolite, create it
-			if not dcmDictionary[conditionDir].has_key(metaboliteDirName):
+			if not nrrdDictionary[conditionDir].has_key(metaboliteDirName):
 				# Initialize a list to contain all the Nrrd file names corresponding to this condition and metabolite
-				dcmDictionary[conditionDir][metaboliteDirName] = []
+				nrrdDictionary[conditionDir][metaboliteDirName] = []
 
 			# Store Nrrd file name to the metabolite's data list
-			dcmDictionary[conditionDir][metaboliteDirName].append(outputFilePath)
+			nrrdDictionary[conditionDir][metaboliteDirName].append(outputFilePath)
 			
 			# Inform the user that the DICOMs were successfully converted
 			logging.info("Successfully converted DICOMs in " + dicomDir)
@@ -118,7 +118,7 @@ class NrrdConverterLogic(object):
 			raise IOError(message)
 
 		# Return the whole dictionary which contains data for all conditions and metabolites
-		return dcmDictionary
+		return nrrdDictionary
 
 # This class gets the statistics from a Nrrd volume file, using a Nrrd segmentation file
 class StatsCollectorLogic(object):
@@ -173,154 +173,240 @@ class StatsCollectorLogic(object):
 		else:
 			return workbook.create_sheet(sheetName)
 
+	# Make worksheets for raw signal
+	def advancedRawData(self, denominatorMetabolite):
+		# Get the segmentation from the segmentation node
+		seg = self.segNode.GetSegmentation()
+		# Get all the segment names in the segmentation
+		segNames = [seg.GetNthSegment(segIndex).GetName() for segIndex in range(seg.GetNumberOfSegments())]
+		# Iterate through each workbook and make a worksheet for Raw Signal
+		for wbPath, wb in self.xlWorkbooks.items():
+			# Get/create raw signal worksheet
+			rawSignalWs = self.getWorkSheet(wb, "Raw Signal")
+			# Get the condition using the output file name of the workbook
+			condition = os.path.basename(wbPath).rstrip('.xlsx')
+			# Iterate through each metabolite and make a table for it
+			for seriesName, series in self.metaStats[condition].items():
+				# Append row in worksheet with the series name
+				rawSignalWs.append([seriesName])
+				# Append row with indented segment names
+				rawSignalWs.append([''] + segNames)
+
+				# Iterate through each timepoint
+				for i in range(len(series)):
+					# Index for timepoint (starts at 1)
+					rawRow = [i + 1]
+					# Get all the statistics for this timepoint
+					stats = series[i].statistics
+					# Iterate through every segment
+					for segmentID in stats["SegmentIDs"]:
+						# Get the mean signal
+						rawRow += [stats[segmentID, "GS mean"]]
+					# Append the all the segmentation's mean signals to a row
+					rawSignalWs.append(rawRow)
+
 	# Make worksheets for raw signal, SNR, and SNR ratio relative to a specific denominator (e.g. by deafult, it is pyruvate as specified in the MetaExporter class below)
-	def advancedData(self, denominatorMetabolite):
+	def advancedSnrData(self, denominatorMetabolite):
 		# Get the segmentation from the segmentation node
 		seg = self.segNode.GetSegmentation()
 		# Get all the segment names in the segmentation
 		segNames = [seg.GetNthSegment(segIndex).GetName() for segIndex in range(seg.GetNumberOfSegments())]
 		# Remove the noise segment because we already retrieved its standard deviations
 		segNames.remove(self.noiseSegment)
-		# Iterate through each workbook
+		# Iterate through each workbook and make worksheets for raw signal, SNR, and SNR ratios
 		for wbPath, wb in self.xlWorkbooks.items():
+			# Get/create worksheets
 			rawSignalWs = self.getWorkSheet(wb, "Raw Signal")
 			snrSignalWs = self.getWorkSheet(wb, "SNR")
 			ratioWs = self.getWorkSheet(wb, "Ratios")
+			# Get the condition using the output file name of the workbook
 			condition = os.path.basename(wbPath).rstrip('.xlsx')
+			# Get the statistics for the denominator metabolite
 			denominatorMetaboliteSeries = self.metaStats[condition][denominatorMetabolite]
+			# Iterate through each metabolite and make a table for it			
 			for seriesName, series in self.metaStats[condition].items():
+				# Add headers to the tables
 				rawSignalWs.append([seriesName])
 				rawSignalWs.append([''] + segNames + ['BG STDEV'])
 				snrSignalWs.append([seriesName])
 				snrSignalWs.append([''] + segNames)
+				# If the current series name is not the same as the denominator metabolite, then we should get the ratio for it
 				if seriesName != denominatorMetabolite:
 					ratioWs.append([seriesName])
 					ratioWs.append([''] + segNames)
+				# Iterate through each timepoint in the series
 				for i in range(len(series)):
+					# Index for timepoint (starts at 1)
 					rawRow = [i + 1]
 					snrRow = [i + 1]
 					ratioRow = [i + 1]
-
+					# Get all the statistics for this timepoint
 					stats = series[i].statistics
+					# Iterate through every segment
 					for segmentID in stats["SegmentIDs"]:
+						# Get the mean signal and SNR if the segment is not the background
 						if segmentID != self.noiseSegmentID:
 							rawRow += [stats[segmentID, "GS mean"]]
 							snrRow += [stats[segmentID, "SNR"]]
+							# Get the ratio if the series name is not the same as the denominator metabolite
 							if seriesName != denominatorMetabolite:
 								ratioRow += [stats[segmentID, "SNR"] / denominatorMetaboliteSeries[i].statistics[segmentID, "SNR"]]
+					# Get the standard deviation of the noise segment in this timepoint
 					rawRow += [stats[self.noiseSegmentID, "GS stdev"]]
+					# Append the worksheet with the rows
 					rawSignalWs.append(rawRow)
 					snrSignalWs.append(snrRow)
 					if seriesName != denominatorMetabolite:
 						ratioWs.append(ratioRow)
 
+	# Get the specified Workbook object
 	def getWorkBook(self, workbookName):
 		if not self.xlWorkbooks.has_key(workbookName):
+			# If it doesn't exist, instantiate an openpyxl Workbook object
 			self.xlWorkbooks[workbookName] = openpyxl.Workbook()
 		return self.xlWorkbooks[workbookName]
 
-	def exportStatsToXl(self, segStatLogic, xlsxFileName, header="", sheetName=""):
-		outputFile = xlsxFileName
-		if not xlsxFileName.lower().endswith('.xlsx'):
-			outputFile += '.xlsx'
+	# Parse the SegmentStatisticsLogic into a workbook
+	def exportStatsToXl(self, segStatLogic, outputFileName, header="", sheetName=""):
+		# If the output file name does not end with the xlsx extension (MS Excel 2007+ format), then add it
+		if not outputFileName.lower().endswith('.xlsx'):
+			outputFileName += '.xlsx'
 
-		wb = self.getWorkBook(outputFile)
+		# Get the workbook object that this timepoint should be in
+		wb = self.getWorkBook(outputFileName)
 
+		# Get the raw statistics (as it would look like in the SegmentStatistics module when exported to table)
 		stats = segStatLogic.exportToString()
+		# Split the table by row
 		rows = stats.split('\n')
 
+		# Get the worksheet that was specified as a parameter
 		ws = self.getWorkSheet(wb, sheetName)
 
+		# Append the specified header to the worksheet
 		ws.append([header])
+		# Split the first row by comma, to get the column names (e.g. "GS mean")
 		columnTitles = rows[0].split(',')
+		# Append the column titles to the worksheet
 		ws.append(columnTitles)
 
+		# Iterate through every row under the header (rows 1 and after)
 		for row in rows[1:]:
+			# Split the rows by comma to get the values
 			items = row.split(',')
+			# Parse each value into a float
 			items[:] = [self.digitize(x) for x in items]
+			# Add the values to the worksheet
 			ws.append(items)
 
 	# Get statistics for a specific volume/timepoint
 	def getStatForVol(self, volFile, folderSaveName, condition, seriesName=""):
-		# Load master volumes
+		# Load the volume, get a tuple of (success, vtkMRMLScalarVolumeNode)
 		vol = slicer.util.loadVolume(volFile, returnNode=True)
 
+		# If the volume was not successfully loaded, exit
 		if not vol[0]:
 			# Print error if volume does not exist or is inaccessible
-			print("Volume could not be loaded from: " + volFile)
-			quit()
+			raise IOError("Volume could not be loaded from: " + volFile)
 
+		# Get the volume node
 		volNode = vol[1]
 
-		# Compute statistics
+		# Instantiate a SegmentStatisticsLogic object to store the statistics
 		segStatLogic = SegmentStatisticsLogic()
+		# Compute the statistics using the specified volume as the master volume
 		segStatLogic.computeStatistics(self.segNode, volNode)
 
+		# If the --getsnr argument was specified
 		if self.getsnr:
+			# Get the noise segment's standard deviation
 			noiseStdev = segStatLogic.statistics[self.noiseSegmentID, "GS stdev"]
+			# Compute the SNRs of other segments
 			segStatLogic = self.computeSnrs(segStatLogic, segStatLogic.statistics['SegmentIDs'], noiseStdev)
 
+		# If this object's statistics dictionary does not contain this series
 		if seriesName not in self.metaStats[condition]:
+			# Initialize it into an empty list
 			self.metaStats[condition][seriesName] = []
 
-		# Append current volume's statistics to the statistics database
+		# Append current volume's statistics to the statistics dictionary
 		self.metaStats[condition][seriesName].append(segStatLogic)
 
-		# Specify the file name/path
+		# Specify the folder name of output
 		documentsDir = os.path.normpath(os.path.expanduser(r"~\\Documents\\StatsCollector\\SegmentStatistics"))
-		filePath = os.path.join(documentsDir, folderSaveName, condition)
-		fileParentDir = os.path.split(filePath)[0]
+		# Specify the folder path of the output
+		fileParentDir = os.path.join(documentsDir, folderSaveName)
+		# Specify the full file path of the Excel file to output
+		filePath = os.path.join(fileParentDir, condition)
 
-		# Make the SegmentStatistics directory if it does not exist
+		# Make the folder directories if they don't exist
 		if not os.path.exists(fileParentDir):
 			os.makedirs(fileParentDir)
 
 		# Export the stats to a file
 		self.exportStatsToXl(segStatLogic, filePath, volNode.GetName(), seriesName)
 
+# When initialized, it uses all the methods above to create the statistics files
 class MetaExporter(object):
+	# Constructor to be called when object of this class is instantiated
 	def __init__(self, pathToDicoms, pathToConverter, segmentationFile, folderSaveName, keepNrrdDir, 
 		noiseSegment, denominatorMetabolite, excludeDirs, hideRawSheets):
-		self.converter = NrrdConverterLogic(pathToDicoms, pathToConverter, excludeDirs)
-		self.sc = StatsCollectorLogic(segmentationFile, noiseSegment)
-		self.folderSaveName = folderSaveName
-		self.excludeDirs = excludeDirs
+		# Instantiate NrrdConverterLogic and StatsCollectorLogic objects
+		converter = NrrdConverterLogic(pathToDicoms, pathToConverter, excludeDirs)
+		sc = StatsCollectorLogic(segmentationFile, noiseSegment)
+		# If no denominator metabolite was specified as an argument, use pyruvate by default
 		if len(denominatorMetabolite) == 0:
-			self.denominatorMetabolite = "01_pyrBy6"
-		else:
-			self.denominatorMetabolite = denominatorMetabolite
+			denominatorMetabolite = "01_pyrBy6"
 
-		# Get all volume names
-		dcmDictionary = self.converter.convertToNrrd()
+		# Get the dictionary containing all the Nrrd paths organized by condition and metabolite
+		nrrdDictionary = converter.convertToNrrd()
 		
-		for condition, conditionDict in dcmDictionary.items():
-			if not condition in self.sc.metaStats:
-				self.sc.metaStats[condition] = {}
+		# Iterate through each condition in the dictionary
+		for condition, conditionDict in nrrdDictionary.items():
+			# If the statistics dictionary does not contain data for the condition, create it
+			if not condition in sc.metaStats:
+				sc.metaStats[condition] = {}
+			# Iterate through each metabolite in the condition dictionary
 			for metabolite, volumes in conditionDict.items():
-				# Get stats for each volume
+				# Iterate through each volume in metabolite
 				for volume in volumes:
-					saveName = os.path.join(self.folderSaveName, condition)
-					self.sc.getStatForVol(volume, self.folderSaveName, condition, metabolite)
+					# Specify the file name
+					saveName = os.path.join(folderSaveName, condition)
+					# Get statistics for that volume
+					sc.getStatForVol(volume, folderSaveName, condition, metabolite)
 
 		# Parse the stats into a more readable table format
-		self.sc.advancedData(self.denominatorMetabolite)
-		# Export stats to XLSX files
-		for wbName, wb in self.sc.xlWorkbooks.items():
+		if sc.getsnr:
+			sc.advancedSnrData(denominatorMetabolite)
+		else:
+			sc.advancedRawData(denominatorMetabolite)
+
+		# Iterate through each Workbook
+		for wbName, wb in sc.xlWorkbooks.items():
+			# By default, when a Workbook is instantiated, openpyxl creates an empty worksheet, delete that one
 			wb.remove_sheet(wb.worksheets[0])
+			# If the --hiderawsheets argument was specified
 			if hideRawSheets:
+				# Get a list of the sheet names in that workbook
 				worksheets = wb.get_sheet_names()
+				# Specify which sheet names to keep
 				keepnames = ["Raw Signal", "SNR", "Ratios"]
+				# Iterate through each worksheet in that Workbook
 				for wsname in worksheets:
+					# If the worksheet is not in the list that should be kept
 					if wsname not in keepnames:
+						# Get the worksheet object
 						ws = wb.get_sheet_by_name(wsname)
+						# Hide the worksheet
 						ws.sheet_state = 'hidden'
+			# Try saving the Workbook object into a file
 			try:
 				wb.save(wbName)
+			# If an input/output error occurs, throw an Exception and give a suggestion
 			except IOError as e:
-				print str(e)
 				e.strerror += '\nPerhaps the file is open or used by another application'
 				raise e
 
-		# Delete the NrrdOutput directory by default
+		# Delete the NrrdOutput directory by default, if the --keepnrrddir argument is not specified
 		if not keepNrrdDir:
 			shutil.rmtree(os.path.normpath(os.path.expanduser(r"~\\Documents\\StatsCollector\\NrrdOutput")))
