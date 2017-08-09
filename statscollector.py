@@ -350,7 +350,7 @@ class StatsCollectorLogic(object):
 class MetaExporter(object):
 	# Constructor to be called when object of this class is instantiated
 	def __init__(self, pathToDicoms, pathToConverter, segmentationFile, folderSaveName, keepNrrdDir, 
-		noiseSegment, denominatorMetabolite, excludeDirs, hideRawSheets):
+		noiseSegment, denominatorMetabolite, excludeDirs, hideRawSheets, csv):
 		# Instantiate NrrdConverterLogic and StatsCollectorLogic objects
 		converter = NrrdConverterLogic(pathToDicoms, pathToConverter, excludeDirs)
 		sc = StatsCollectorLogic(segmentationFile, noiseSegment)
@@ -399,6 +399,22 @@ class MetaExporter(object):
 						ws = wb.get_sheet_by_name(wsname)
 						# Hide the worksheet
 						ws.sheet_state = 'hidden'
+
+			# If the user wants CSV files to be saved, extract each worksheet into a separate CSV file
+			if csv:
+				import csv
+				for ws in wb.worksheets:
+					csvdir = os.path.join(os.path.dirname(wbName), "CSV")
+					if not os.path.exists(csvdir):
+						os.makedirs(csvdir)
+					csvname = "%s-%s.csv" % (os.path.basename(wbName).rstrip('.xlsx'), ws.title)
+					csvpath = os.path.join(csvdir, csvname)
+
+					with open(csvpath, 'wb') as file:
+						writer = csv.writer(file)
+						for row in ws.rows:
+							writer.writerow([cell.value for cell in row])
+
 			# Try saving the Workbook object into a file
 			try:
 				wb.save(wbName)

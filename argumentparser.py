@@ -34,10 +34,11 @@ class ArgumentParser(object):
 		"segmentationfile":[["path"], False],
 		"foldersavename":[["name"], False],
 		"keepnrrddir":[["boolean"], True],
-		"getsnr":[["segmentName"], True],
-		"denominatormetabolite":[["name", "dcmFolder"], True],
+		"getsnr":[["segmentname"], True],
+		"denominatormetabolite":[["name", "dcmfolder"], True],
 		"excludedirs":[["name"], True],
-		"hiderawsheets":[["boolean"], True]
+		"hiderawsheets":[["boolean"], True],
+		"csv":[["boolean"], True]
 		}
 		self.args = self.ParseArgs(sysArgs)
 
@@ -51,7 +52,7 @@ class ArgumentParser(object):
 			if argType != "boolean" and len(argValues) == 0:
 				raise ArgumentError("Missing parameter for argument: " + arg)
 				return False
-			if argType == "path":
+			elif argType == "path":
 				if not os.path.exists(argValues[0]):
 					raise ArgumentError("File/folder not found: " + argValues[0])
 					return False
@@ -64,12 +65,12 @@ class ArgumentParser(object):
 				if not len(argValues) == 0:
 					raise ArgumentError("No parameters are expected for boolean argument: " + arg)
 					return False
-			elif argType == "segmentName":
+			elif argType == "segmentname":
 				segFile = self.args["segmentationfile"][0]
 				segNode = slicer.util.loadSegmentation(segFile, returnNode=True)[1]
 				# If provided path is not a real segmentation file or can't be read by Slicer, it is invalid
 				if segNode is None:
-					raise ArgumentError("Path is not a real segmentation file or can't be read by Slicer: " + segFile)
+					raise ArgumentError("Path is not a real segmentation file or cannot be read by Slicer: " + segFile)
 					return False
 				seg = segNode.GetSegmentation()
 				segNames = [seg.GetNthSegment(segIndex).GetName() for segIndex in range(seg.GetNumberOfSegments())]
@@ -78,7 +79,7 @@ class ArgumentParser(object):
 				if argValues[0] not in segNames:
 					raise ArgumentError("Segment '" + argValues[0] + "' was not found in segmentation at: " + segFile + '\nFound Segments: ' + str(segNames))
 					return False
-			elif argType == "dcmFolder":
+			elif argType == "dcmfolder":
 				pathToDicoms = self.args["pathtodicoms"][0]
 				folderName = argValues[0]
 				pathWalk = os.walk(pathToDicoms)
@@ -107,6 +108,14 @@ class ArgumentParser(object):
 			# If the argument is not optional, see if it is missing
 			if not argValues[1] and argName not in self.args:
 				raise ArgumentError("Required argument " + argName + " was not specified")
+
+		# Get the absolute paths all path arguments, to ensure proper flow
+		for arg, argValues in self.args.items():
+			if arg.lower() in self.argDict and 'path' in self.argDict[arg][0]:
+				# For every parameter that was passed for this argument
+				for i in range(len(self.args[arg])):
+					# Convert its path into an absolute path
+					self.args[arg][i] = os.path.realpath(self.args[arg][i])
 
 		# Validate specific arguments by their type
 		for arg, argValues in self.args.items():
