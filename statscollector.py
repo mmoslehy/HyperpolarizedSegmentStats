@@ -1,6 +1,6 @@
 import vtkSegmentationCorePython as vtkSegmentationCore
 import vtkSlicerSegmentationsModuleLogicPython as vtkSlicerSegmentationsModuleLogic
-import slicer, logging, os, shutil
+import slicer, logging, os, shutil, subprocess
 from SegmentStatistics import SegmentStatisticsLogic
 import openpyxl
 
@@ -83,12 +83,10 @@ class NrrdConverterLogic(object):
 				os.makedirs(documentsDir)
 			# Specify the output file path for the temporary Nrrd file containing the volume in 'dicomDir'
 			outputFilePath = os.path.normpath(documentsDir + "\\" + conditionDir + "-" + metaboliteDirName + "_" + volName + ".nrrd")
-			# This is a workaround to Slicer's Python environment containing a different version of ITK library which is incompatible with DicomToNrrdConverter.exe
-			runnerPath = os.path.split(self.converter)[0] + '\\runner.bat'
 			# Specify the string to execute in the operating system's shell (e.g. Command Prompt for Windows or Bash for UNIX)
-			execString = runnerPath + " " + self.converter + " --inputDicomDirectory " + dicomDir + " --outputVolume " + outputFilePath
+			execString = self.converter + " --inputDicomDirectory " + dicomDir + " --outputVolume " + outputFilePath
 			# Use DicomToNrrdConverter.exe to convert all DICOMs to a Nrrd file and supress stdout of converter
-			os.system(execString + " > nul")
+			subprocess.call(execString + " > nul", shell=True, env={})
 
 			# If the dictionary does not contain data for the current volume's condition, create it
 			if not nrrdDictionary.has_key(conditionDir):
