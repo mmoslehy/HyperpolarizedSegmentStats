@@ -31,6 +31,7 @@ The script will be at `%USERPROFILE%\HyperpolarizedSegmentStats`
 | --getsnr					| SegmentName		|
 | --denominatormetabolite	| Name				|
 | --hiderawsheets			| boolean			|
+| --csv						| boolean			|
 
 _\*are required_
 
