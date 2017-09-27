@@ -5,7 +5,7 @@
 - [Download and install Slicer 4.7 or newer (currently the Nightly Build)](http://download.slicer.org/)
 - [Download and install Git Bash (press next all the way through)](https://git-scm.com/downloads)
 - Run Git Bash and execute the following command:
-	`git clone https://github.com/mmoslehy/HyperpolarizedSegmentStats`
+	`git clone https://github.com/moselhy/HyperpolarizedSegmentStats`
 The script will be at `%USERPROFILE%\HyperpolarizedSegmentStats`
 - From Command Prompt, run the script using Slicer's `--python-script` argument (see [example](#example))
 
