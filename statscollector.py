@@ -200,7 +200,7 @@ class StatsCollectorLogic(object):
 					# Index for timepoint (starts at 1)
 					rawRow = [i + 1]
 					# Get all the statistics for this timepoint
-					stats = series[i].statistics
+					stats = series[i].getStatistics()
 					# Iterate through every segment
 					for segmentID in stats["SegmentIDs"]:
 						# Get the mean signal
