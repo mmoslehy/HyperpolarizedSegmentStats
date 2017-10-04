@@ -153,8 +153,9 @@ class StatsCollectorLogic(object):
 
 	# Function to compute the SNRs using the background's standard deviation and the segmentation's mean signal
 	def computeSnrs(self, segStatLogic, segmentIDs, noiseStdev):
+		statistics = segStatLogic.getStatistics()
 		for segmentID in segmentIDs:
-			segStatLogic.statistics[segmentID, "SNR"] = segStatLogic.statistics[segmentID, "GS mean"] / noiseStdev
+			statistics[segmentID, "SNR"] = statistics[(segmentID, "ScalarVolumeSegmentStatisticsPlugin.mean")] / noiseStdev
 		return segStatLogic
 
 	# Gets the specified sheet from the specified workbook
@@ -199,7 +200,7 @@ class StatsCollectorLogic(object):
 					# Iterate through every segment
 					for segmentID in stats["SegmentIDs"]:
 						# Get the mean signal
-						rawRow += [stats[segmentID, "GS mean"]]
+						rawRow += [stats[(segmentID, "ScalarVolumeSegmentStatisticsPlugin.mean")]]
 					# Append the all the segmentation's mean signals to a row
 					rawSignalWs.append(rawRow)
 
@@ -239,18 +240,18 @@ class StatsCollectorLogic(object):
 					snrRow = [i + 1]
 					ratioRow = [i + 1]
 					# Get all the statistics for this timepoint
-					stats = series[i].statistics
+					stats = series[i].getStatistics()
 					# Iterate through every segment
 					for segmentID in stats["SegmentIDs"]:
 						# Get the mean signal and SNR if the segment is not the background
 						if segmentID != self.noiseSegmentID:
-							rawRow += [stats[segmentID, "GS mean"]]
+							rawRow += [(stats[segmentID, "ScalarVolumeSegmentStatisticsPlugin.mean"])]
 							snrRow += [stats[segmentID, "SNR"]]
 							# Get the ratio if the series name is not the same as the denominator metabolite
 							if seriesName != denominatorMetabolite:
-								ratioRow += [stats[segmentID, "SNR"] / denominatorMetaboliteSeries[i].statistics[segmentID, "SNR"]]
+								ratioRow += [stats[segmentID, "SNR"] / denominatorMetaboliteSeries[i].getStatistics()[segmentID, "SNR"]]
 					# Get the standard deviation of the noise segment in this timepoint
-					rawRow += [stats[self.noiseSegmentID, "GS stdev"]]
+					rawRow += [stats[(self.noiseSegmentID, "ScalarVolumeSegmentStatisticsPlugin.stdev")]]
 					# Append the worksheet with the rows
 					rawSignalWs.append(rawRow)
 					snrSignalWs.append(snrRow)
@@ -283,8 +284,18 @@ class StatsCollectorLogic(object):
 
 		# Append the specified header to the worksheet
 		ws.append([header])
-		# Split the first row by comma, to get the column names (e.g. "GS mean")
+		# Split the first row by comma, to get the column names (e.g. "mean")
 		columnTitles = rows[0].split(',')
+		# Make the titles more readable (Remove the Slicer prefixes)
+		newTitles = []
+		for x in columnTitles:
+			if len(x.split('.')) > 1:
+				newTitles.append(x.split('.')[1])
+			else:
+				newTitles.append(x)
+		columnTitles = newTitles
+		columnTitles = [x.rstrip("\"") for x in columnTitles]
+		columnTitles = [x.lstrip("\"") for x in columnTitles]
 		# Append the column titles to the worksheet
 		ws.append(columnTitles)
 
@@ -312,15 +323,18 @@ class StatsCollectorLogic(object):
 
 		# Instantiate a SegmentStatisticsLogic object to store the statistics
 		segStatLogic = SegmentStatisticsLogic()
+		segStatLogic.getParameterNode().SetParameter("Segmentation", self.segNode.GetID())
+		segStatLogic.getParameterNode().SetParameter("ScalarVolume", volNode.GetID())
 		# Compute the statistics using the specified volume as the master volume
-		segStatLogic.computeStatistics(self.segNode, volNode)
+		segStatLogic.computeStatistics()
 
 		# If the --getsnr argument was specified
 		if self.getsnr:
+			statistics = segStatLogic.getStatistics()
 			# Get the noise segment's standard deviation
-			noiseStdev = segStatLogic.statistics[self.noiseSegmentID, "GS stdev"]
+			noiseStdev = statistics[(self.noiseSegmentID, "ScalarVolumeSegmentStatisticsPlugin.stdev")]
 			# Compute the SNRs of other segments
-			segStatLogic = self.computeSnrs(segStatLogic, segStatLogic.statistics['SegmentIDs'], noiseStdev)
+			segStatLogic = self.computeSnrs(segStatLogic, statistics['SegmentIDs'], noiseStdev)
 
 		# If this object's statistics dictionary does not contain this series
 		if seriesName not in self.metaStats[condition]:
