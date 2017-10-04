@@ -154,8 +154,12 @@ class StatsCollectorLogic(object):
 	# Function to compute the SNRs using the background's standard deviation and the segmentation's mean signal
 	def computeSnrs(self, segStatLogic, segmentIDs, noiseStdev):
 		statistics = segStatLogic.getStatistics()
+		segStatLogic.keys += ["SNR"]
 		for segmentID in segmentIDs:
-			statistics[segmentID, "SNR"] = statistics[(segmentID, "ScalarVolumeSegmentStatisticsPlugin.mean")] / noiseStdev
+			statistics[(segmentID, "SNR")] = statistics[(segmentID, "ScalarVolumeSegmentStatisticsPlugin.mean")] / noiseStdev
+		parNode = segStatLogic.getParameterNode()
+		parNode.statistics = statistics
+		segStatLogic.setParameterNode(parNode)
 		return segStatLogic
 
 	# Gets the specified sheet from the specified workbook
@@ -246,10 +250,10 @@ class StatsCollectorLogic(object):
 						# Get the mean signal and SNR if the segment is not the background
 						if segmentID != self.noiseSegmentID:
 							rawRow += [(stats[segmentID, "ScalarVolumeSegmentStatisticsPlugin.mean"])]
-							snrRow += [stats[segmentID, "SNR"]]
+							snrRow += [stats[(segmentID, "SNR")]]
 							# Get the ratio if the series name is not the same as the denominator metabolite
 							if seriesName != denominatorMetabolite:
-								ratioRow += [stats[segmentID, "SNR"] / denominatorMetaboliteSeries[i].getStatistics()[segmentID, "SNR"]]
+								ratioRow += [stats[(segmentID, "SNR")] / denominatorMetaboliteSeries[i].getStatistics()[(segmentID, "SNR")]]
 					# Get the standard deviation of the noise segment in this timepoint
 					rawRow += [stats[(self.noiseSegmentID, "ScalarVolumeSegmentStatisticsPlugin.stdev")]]
 					# Append the worksheet with the rows
