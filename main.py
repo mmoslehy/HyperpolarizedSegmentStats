@@ -1,16 +1,16 @@
 import os, sys, logging
 from argumentparser import ArgumentParser, ArgumentError
 import statscollector
-## Debugging
+## Debugging for Visual Studio 2013 with Python Tools for Visual Studio
 def dbg():
-	import ptvsd
-	ptvsd.enable_attach(secret='s')
-	ptvsd.wait_for_attach()
-
-# Uncomment this line to enable debugging in Visual Studio
-# dbg()
-## End debug
-
+	try:
+		import ptvsd
+		ptvsd.enable_attach(secret='s')
+		ptvsd.wait_for_attach()
+	except ImportError:
+		import pip
+		pip.main(['install','-Iv','ptvsd==2.2.0'])
+		dbg()
 
 argParser = ArgumentParser(sys.argv)
 try:
@@ -33,4 +33,7 @@ else:
 	excludedirs = argParser.GetArg("excludedirs")
 	hiderawsheets = argParser.GetArg("hiderawsheets")
 	csv = argParser.GetArg("csv")
+	debug = argParser.GetArg("debug")
+	if(debug):
+		dbg()
 	me = statscollector.MetaExporter(pathtodicoms, pathtoconverter, segmentationfile, foldersaveName, keepnrrddir, snrsegment, denominatormetabolite, excludedirs, hiderawsheets, csv)

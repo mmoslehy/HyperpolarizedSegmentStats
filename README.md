@@ -42,4 +42,4 @@ _\*\*can be a list of names_
 
 From Command Prompt, run:
 
-`"C:\Program Files\Slicer 4.7.0-2017-07-10\Slicer.exe" --python-script "%USERPROFILE%\HyperpolarizedSegmentStats\main.py" --pathtodicoms "%USERPROFILE%\HyperpolarizedSegmentStats\sampledata" --segmentationfile "%USERPROFILE%\HyperpolarizedSegmentStats\sampledata\Segmentation.seg.nrrd" --foldersavename 54657_stats --getsnr BACKGROUND --excludedirs Ser06_T1 Ser10_T2 --exit-after-startup --no-main-window`
+`"C:\Program Files\Slicer 4.7.0-2017-07-10\Slicer.exe" --python-script "%USERPROFILE%\HyperpolarizedSegmentStats\main.py" --pathtodicoms "%USERPROFILE%\HyperpolarizedSegmentStats\sampledata" --segmentationfile "%USERPROFILE%\HyperpolarizedSegmentStats\sampledata\Segmentation.seg.nrrd" --foldersavename samplestats --getsnr BACKGROUND --excludedirs Ser06_T1 Ser10_T2 --exit-after-startup --no-main-window`

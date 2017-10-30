@@ -38,7 +38,8 @@ class ArgumentParser(object):
 		"denominatormetabolite":[["name", "dcmfolder"], True],
 		"excludedirs":[["name"], True],
 		"hiderawsheets":[["boolean"], True],
-		"csv":[["boolean"], True]
+		"csv":[["boolean"], True],
+		"debug":[["boolean"], True]
 		}
 		self.args = self.ParseArgs(sysArgs)
 
