@@ -200,7 +200,7 @@ class StatsCollectorLogic(object):
 					# Index for timepoint (starts at 1)
 					rawRow = [i + 1]
 					# Get all the statistics for this timepoint
-					stats = series[i].getStatistics()
+					stats = series[i]
 					# Iterate through every segment
 					for segmentID in stats["SegmentIDs"]:
 						# Get the mean signal
@@ -244,7 +244,7 @@ class StatsCollectorLogic(object):
 					snrRow = [i + 1]
 					ratioRow = [i + 1]
 					# Get all the statistics for this timepoint
-					stats = series[i].getStatistics()
+					stats = series[i]
 					# Iterate through every segment
 					for segmentID in stats["SegmentIDs"]:
 						# Get the mean signal and SNR if the segment is not the background
@@ -253,7 +253,7 @@ class StatsCollectorLogic(object):
 							snrRow += [stats[(segmentID, "SNR")]]
 							# Get the ratio if the series name is not the same as the denominator metabolite
 							if seriesName != denominatorMetabolite:
-								ratioRow += [stats[(segmentID, "SNR")] / denominatorMetaboliteSeries[i].getStatistics()[(segmentID, "SNR")]]
+								ratioRow += [stats[(segmentID, "SNR")] / denominatorMetaboliteSeries[i][(segmentID, "SNR")]]
 					# Get the standard deviation of the noise segment in this timepoint
 					rawRow += [stats[(self.noiseSegmentID, "ScalarVolumeSegmentStatisticsPlugin.stdev")]]
 					# Append the worksheet with the rows
@@ -346,7 +346,7 @@ class StatsCollectorLogic(object):
 			self.metaStats[condition][seriesName] = []
 
 		# Append current volume's statistics to the statistics dictionary
-		self.metaStats[condition][seriesName].append(segStatLogic)
+		self.metaStats[condition][seriesName].append(segStatLogic.getStatistics())
 
 		# Specify the folder name of output
 		documentsDir = os.path.normpath(os.path.expanduser(r"~\\Documents\\StatsCollector\\SegmentStatistics"))
